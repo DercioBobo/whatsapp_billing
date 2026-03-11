@@ -1,0 +1,2 @@
+include requirements.txt
+recursive-include whatsapp_billing *.json *.js *.css *.html *.txt *.md
