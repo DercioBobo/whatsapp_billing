@@ -109,6 +109,83 @@ def get_config_for_customer(customer):
     return config
 
 
+@frappe.whitelist()
+def test_connection(config_name):
+    """Ping the API endpoint and return a diagnostics dict.
+
+    Never raises — always returns a structured result so the client
+    can decide how to display it.
+
+    Returns
+    -------
+    dict
+        success        bool
+        total_records  int   — total items in the response array
+        months         list  — unique YYYY-MM values found in the data
+        sample         dict  — first record (sanitised), for visual confirmation
+        error          str   — human-readable error message (when success=False)
+        status_code    int   — HTTP status code (when available)
+    """
+    config = frappe.get_doc("WhatsApp Billing Config", config_name)
+
+    headers = {"Accept": "application/json"}
+    if config.get("api_token"):
+        headers["Authorization"] = f"Bearer {config.get_password('api_token')}"
+
+    try:
+        response = requests.get(config.api_endpoint, headers=headers, timeout=30)
+    except requests.exceptions.Timeout:
+        return {"success": False, "error": "Connection timed out after 30 s. Check the endpoint URL and network access."}
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "error": f"Could not connect to {config.api_endpoint}. Check the URL and DNS."}
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
+
+    if not response.ok:
+        msg = {
+            401: "Unauthorized (401) — API token is missing or invalid.",
+            403: "Forbidden (403) — token does not have access to this endpoint.",
+            404: "Not Found (404) — the endpoint URL does not exist.",
+            500: "Server Error (500) — the API server returned an internal error.",
+        }.get(response.status_code, f"HTTP {response.status_code} — {response.reason}")
+        return {"success": False, "error": msg, "status_code": response.status_code}
+
+    try:
+        raw = response.json()
+    except Exception:
+        return {"success": False, "error": "Response is not valid JSON. Check the endpoint returns application/json."}
+
+    # Normalise to list
+    if isinstance(raw, dict):
+        for key in ("data", "results", "records", "items"):
+            if key in raw and isinstance(raw[key], list):
+                raw = raw[key]
+                break
+        else:
+            raw = [raw]
+
+    if not isinstance(raw, list):
+        return {"success": False, "error": "Expected a JSON array but got something else."}
+
+    # Collect unique months present in the data
+    months = set()
+    for record in raw:
+        day_str = str(record.get("day", "")).strip()
+        if day_str:
+            try:
+                months.add(datetime.strptime(day_str[:10], "%Y-%m-%d").strftime("%Y-%m"))
+            except ValueError:
+                pass
+
+    return {
+        "success": True,
+        "total_records": len(raw),
+        "months": sorted(months, reverse=True),
+        "sample": raw[0] if raw else None,
+        "status_code": response.status_code,
+    }
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Core billing logic
 # ─────────────────────────────────────────────────────────────────────────────
