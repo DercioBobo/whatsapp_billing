@@ -45,5 +45,11 @@ after_install = "whatsapp_billing.setup.after_install"
 # ─── Scheduler (intentionally empty — no auto-scheduling) ─────────────────────
 scheduler_events = {}
 
-# ─── Doc Events (intentionally empty — fully manual trigger) ──────────────────
-doc_events = {}
+# ─── Doc Events ───────────────────────────────────────────────────────────────
+# Only fires on Sales Invoices that have wb_enabled=1 AND were created by
+# Auto Repeat. All other invoices are completely untouched.
+doc_events = {
+    "Sales Invoice": {
+        "after_insert": "whatsapp_billing.billing_hooks.on_sales_invoice_after_insert"
+    }
+}

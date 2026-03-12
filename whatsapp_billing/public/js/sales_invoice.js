@@ -21,11 +21,8 @@ frappe.ui.form.on('Sales Invoice', {
 			wb_fetch_config(frm);
 		}
 
-		// Auto-set billing month to previous calendar month
-		if (!frm.doc.wb_billing_month) {
-			var prev = wb_previous_month();
-			frm.set_value('wb_billing_month', prev);
-		}
+		// Always set billing month to previous calendar month when enabling
+		frm.set_value('wb_billing_month', wb_previous_month());
 	},
 
 	customer: function (frm) {
