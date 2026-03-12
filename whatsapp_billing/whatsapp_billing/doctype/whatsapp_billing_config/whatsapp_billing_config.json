@@ -17,6 +17,7 @@
   "api_token",
   "col_break_2",
   "billing_item",
+  "line_description_template",
   "section_break_notes",
   "notes"
  ],
@@ -84,6 +85,12 @@
    "options": "Item",
    "reqd": 1,
    "description": "ERPNext Item used in Sales Invoice line"
+  },
+  {
+   "fieldname": "line_description_template",
+   "fieldtype": "Small Text",
+   "label": "Invoice Line Description Template",
+   "description": "Available variables: {month_name}, {month_name_short}, {month}, {year}, {billing_month}, {total_units}, {total_units_raw}, {price_per_unit}, {total_amount}, {currency}, {customer_name}"
   },
   {
    "fieldname": "section_break_notes",

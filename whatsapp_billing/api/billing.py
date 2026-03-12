@@ -11,12 +11,78 @@ Billing logic
   - total_amount = total_units × price_per_unit
 """
 
+import calendar
 import json
 from collections import defaultdict
 from datetime import datetime
 
 import frappe
 import requests
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Description template renderer
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _render_description(
+    template: str,
+    billing_month: str,
+    total_units: int,
+    price_per_unit: float,
+    total_amount: float,
+    currency: str,
+    customer_name: str,
+) -> str:
+    """Render the line description template with billing context variables.
+
+    Supported variables
+    -------------------
+    {month_name}       Full month name in English, e.g. "February"
+    {month_name_short} Abbreviated month name, e.g. "Feb"
+    {month}            Zero-padded month number, e.g. "02"
+    {year}             Four-digit year, e.g. "2026"
+    {billing_month}    YYYY-MM string, e.g. "2026-02"
+    {total_units}      Thousands-formatted unit count, e.g. "1,234"
+    {total_units_raw}  Plain integer string, e.g. "1234"
+    {price_per_unit}   Rate formatted to 2 decimal places, e.g. "10.00"
+    {total_amount}     Amount formatted to 2 decimal places, e.g. "12,340.00"
+    {currency}         Currency code, e.g. "MZN"
+    {customer_name}    Customer full name as in ERPNext
+
+    If the template contains an unrecognised variable, it is left as-is
+    so the user can see exactly what went wrong rather than getting an error.
+    """
+    if not template:
+        return ""
+
+    try:
+        year_str, month_str = billing_month.split("-")
+        month_int = int(month_str)
+    except (ValueError, AttributeError):
+        return template
+
+    context = {
+        "month_name": calendar.month_name[month_int],        # "February"
+        "month_name_short": calendar.month_abbr[month_int],  # "Feb"
+        "month": month_str,                                   # "02"
+        "year": year_str,                                     # "2026"
+        "billing_month": billing_month,                       # "2026-02"
+        "total_units": f"{total_units:,}",                    # "1,234"
+        "total_units_raw": str(total_units),                  # "1234"
+        "price_per_unit": f"{price_per_unit:,.2f}",           # "10.00"
+        "total_amount": f"{total_amount:,.2f}",               # "12,340.00"
+        "currency": currency or "",
+        "customer_name": customer_name or "",
+    }
+
+    # Use format_map so unknown keys are left as literal {key} strings
+    # instead of raising a KeyError.
+    class _SafeDict(dict):
+        def __missing__(self, key):
+            return "{" + key + "}"
+
+    return template.format_map(_SafeDict(context))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -243,7 +309,20 @@ def apply_usage_to_invoice(invoice_name, billing_month):
 
     config = frappe.get_doc("WhatsApp Billing Config", invoice.wb_config)
 
+    # ── Render line description (only if a template is configured) ───────────
+    line_description = _render_description(
+        template=config.get("line_description_template") or "",
+        billing_month=billing_month,
+        total_units=total_units,
+        price_per_unit=price_per_unit,
+        total_amount=total_amount,
+        currency=config.currency or "",
+        customer_name=invoice.customer_name or invoice.customer,
+    )
+
     # ── Update or append the billing item row ───────────────────────────────
+    # Only this specific row is touched. All other rows (e.g. Service
+    # Maintenance) are left exactly as they are.
     item_row_name = None
     billing_row_found = False
 
@@ -251,6 +330,8 @@ def apply_usage_to_invoice(invoice_name, billing_month):
         if item.item_code == item_code:
             item.qty = total_units
             item.rate = price_per_unit
+            if line_description:
+                item.description = line_description
             item_row_name = item.name
             billing_row_found = True
             break
@@ -262,6 +343,7 @@ def apply_usage_to_invoice(invoice_name, billing_month):
                 "item_code": item_code,
                 "qty": total_units,
                 "rate": price_per_unit,
+                "description": line_description or None,
             },
         )
         # name is assigned after save; keep reference via object
