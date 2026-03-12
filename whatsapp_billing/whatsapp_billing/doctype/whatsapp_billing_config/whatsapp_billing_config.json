@@ -18,6 +18,8 @@
   "col_break_2",
   "billing_item",
   "line_description_template",
+  "section_break_notifications",
+  "notification_email",
   "section_break_notes",
   "notes"
  ],
@@ -91,6 +93,18 @@
    "fieldtype": "Small Text",
    "label": "Invoice Line Description Template",
    "description": "Available variables: {month_name}, {month_name_short}, {month}, {year}, {billing_month}, {total_units}, {total_units_raw}, {price_per_unit}, {total_amount}, {currency}, {customer_name}"
+  },
+  {
+   "fieldname": "section_break_notifications",
+   "fieldtype": "Section Break",
+   "label": "Notifications"
+  },
+  {
+   "fieldname": "notification_email",
+   "fieldtype": "Data",
+   "label": "Failure Notification Email",
+   "options": "Email",
+   "description": "When Auto Repeat creates an invoice and the API fetch fails, an alert is sent to this address. Uses the system default outgoing email account."
   },
   {
    "fieldname": "section_break_notes",
