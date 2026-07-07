@@ -26,6 +26,7 @@ from frappe import _
 
 MATCH_COLOUR = {
     "OK": "green",
+    "Reconciled": "green",
     "Month Mismatch": "orange",
     "Units Mismatch": "orange",
     "Item Missing": "orange",
@@ -115,7 +116,7 @@ def _get_data(filters):
     for row in rows:
         match = _match_status(row)
 
-        if mismatches_only and match == "OK":
+        if mismatches_only and match in ("OK", "Reconciled"):
             continue
 
         invoice_status = {0: "Draft", 1: "Submitted", 2: "Cancelled"}.get(row.invoice_docstatus, "—")
@@ -145,7 +146,13 @@ def _match_status(row):
     Checked in priority order — a superseded link is worth flagging even if
     the month happens to still line up, since another fetch has already
     overwritten that invoice's billing line.
+
+    A log with status "Confirmed" has been manually attested by a user (via
+    "Mark as Billed") and always reads as reconciled, regardless of whether
+    the numbers line up — that's the whole point of a manual override.
     """
+    if row.log_status == "Confirmed":
+        return "Reconciled"
     if not row.sales_invoice:
         return "No Invoice"
     if row.invoice_docstatus == 2:
@@ -193,7 +200,10 @@ def _get_summary(data):
         return []
 
     total = len(data)
-    mismatches = sum(1 for row in data if ">OK<" not in row.get("match_status", ""))
+    ok_labels = (">OK<", ">Reconciled<")
+    mismatches = sum(
+        1 for row in data if not any(label in row.get("match_status", "") for label in ok_labels)
+    )
 
     return [
         {"label": _("Logs Shown"), "value": total, "datatype": "Int", "indicator": "blue"},

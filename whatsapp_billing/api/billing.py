@@ -502,3 +502,74 @@ def apply_usage_to_invoice(invoice_name, billing_month):
         "item_row_name": item_row_name,
         "usage_log": log_name,
     }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Manual reconciliation
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@frappe.whitelist()
+def mark_usage_as_billed(customer, billing_month, sales_invoice):
+    """Manually attest that *customer*'s usage for *billing_month* was already
+    billed via *sales_invoice*, without fetching or recalculating anything.
+
+    Covers the case where an invoice was created by hand (the normal fetch was
+    missed or skipped) — this only links/creates the WhatsApp Usage Log for
+    that month and marks it Confirmed, so the Live Usage and Reconciliation
+    reports stop flagging it. It never touches the invoice's items, totals, or
+    any of its ``wb_*`` fields.
+
+    Returns
+    -------
+    dict
+        ``{success, usage_log}``
+    """
+    if not frappe.db.exists("Sales Invoice", sales_invoice):
+        frappe.throw(f"Sales Invoice {sales_invoice} does not exist.", title="Invoice Not Found")
+
+    invoice_customer = frappe.db.get_value("Sales Invoice", sales_invoice, "customer")
+    if invoice_customer != customer:
+        frappe.throw(
+            f"Sales Invoice {sales_invoice} belongs to customer '{invoice_customer}', not '{customer}'.",
+            title="Customer Mismatch",
+        )
+
+    existing_log = frappe.db.get_value(
+        "WhatsApp Usage Log",
+        {"customer": customer, "billing_month": billing_month},
+        "name",
+    )
+
+    if existing_log:
+        frappe.db.set_value(
+            "WhatsApp Usage Log",
+            existing_log,
+            {"sales_invoice": sales_invoice, "status": "Confirmed"},
+        )
+        log_name = existing_log
+    else:
+        config_endpoint = frappe.db.get_value(
+            "WhatsApp Billing Config",
+            {"customer": customer, "is_active": 1},
+            "api_endpoint",
+        )
+        log = frappe.get_doc(
+            {
+                "doctype": "WhatsApp Usage Log",
+                "sales_invoice": sales_invoice,
+                "customer": customer,
+                "billing_month": billing_month,
+                "total_billable_units": 0,
+                "price_per_unit": 0,
+                "api_endpoint": config_endpoint or "",
+                "fetched_on": frappe.utils.now_datetime(),
+                "status": "Confirmed",
+            }
+        )
+        log.insert(ignore_permissions=True)
+        log_name = log.name
+
+    frappe.db.commit()
+
+    return {"success": True, "usage_log": log_name}

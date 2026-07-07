@@ -119,8 +119,8 @@ def _get_data(filters):
     if not configs:
         return [], []
 
-    # Load all wb-enabled Sales Invoices once (to match against months later)
-    # Structure: {(customer, billing_month): (invoice_name, docstatus)}
+    # Load all billed months once (to match against API months later)
+    # Structure: {(customer, billing_month): (invoice_name, docstatus, log_status)}
     invoice_map = _build_invoice_map()
 
     rows = []
@@ -146,11 +146,11 @@ def _get_data(filters):
             total_sessions = agg["sessions"]
             expected_amount = billable_units * price_per_unit
 
-            invoice_name, docstatus = invoice_map.get(
-                (config.customer, month), (None, None)
+            invoice_name, docstatus, log_status = invoice_map.get(
+                (config.customer, month), (None, None, None)
             )
 
-            invoice_status_html = _invoice_status_html(invoice_name, docstatus)
+            invoice_status_html = _invoice_status_html(invoice_name, docstatus, log_status)
 
             rows.append(
                 {
@@ -242,28 +242,38 @@ def _aggregate(raw_data, billing_month_filter):
 
 def _build_invoice_map():
     """
-    Return a dict mapping (customer, billing_month) → (invoice_name, docstatus)
-    for all wb-enabled Sales Invoices.
+    Return a dict mapping (customer, billing_month) → (invoice_name, docstatus, log_status)
+    sourced from WhatsApp Usage Log — the actual record of "this month was billed
+    via this invoice" — rather than the invoice's own ``wb_billing_month`` field,
+    which only ever holds the single most-recently-fetched month and drifts out
+    of sync if a different month is later fetched onto the same invoice.
+
+    This also covers invoices created manually via "Mark as Billed" (see
+    ``mark_usage_as_billed``), which creates a Usage Log without touching the
+    invoice's ``wb_*`` fields at all.
     """
-    invoices = frappe.db.sql(
+    rows = frappe.db.sql(
         """
-        SELECT name, customer, wb_billing_month, docstatus
-        FROM   `tabSales Invoice`
-        WHERE  wb_enabled = 1
-          AND  wb_billing_month IS NOT NULL
-          AND  wb_billing_month != ''
+        SELECT wl.customer, wl.billing_month, wl.sales_invoice, wl.status AS log_status, si.docstatus
+        FROM   `tabWhatsApp Usage Log` wl
+        LEFT JOIN `tabSales Invoice` si ON si.name = wl.sales_invoice
+        WHERE  wl.sales_invoice IS NOT NULL
+          AND  wl.sales_invoice != ''
         """,
         as_dict=True,
     )
     return {
-        (inv.customer, inv.wb_billing_month): (inv.name, inv.docstatus)
-        for inv in invoices
+        (row.customer, row.billing_month): (row.sales_invoice, row.docstatus, row.log_status)
+        for row in rows
     }
 
 
-def _invoice_status_html(invoice_name, docstatus):
+def _invoice_status_html(invoice_name, docstatus, log_status):
     if not invoice_name:
         return "<span class='indicator-pill grey'>Not Created</span>"
+
+    if log_status == "Confirmed":
+        return "<span class='indicator-pill green'>Confirmed</span>"
 
     labels = {0: ("Draft", "orange"), 1: ("Submitted", "green"), 2: ("Cancelled", "red")}
     label, colour = labels.get(docstatus, ("Unknown", "grey"))
