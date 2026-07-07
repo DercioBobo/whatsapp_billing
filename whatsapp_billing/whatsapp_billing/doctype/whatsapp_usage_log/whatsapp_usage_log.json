@@ -29,7 +29,7 @@
    "label": "Sales Invoice",
    "options": "Sales Invoice",
    "reqd": 1,
-   "read_only": 1
+   "description": "Editable so a mis-linked log can be re-pointed at the correct invoice during reconciliation."
   },
   {
    "fieldname": "customer",
@@ -64,19 +64,20 @@
    "fieldname": "total_billable_units",
    "fieldtype": "Int",
    "label": "Total Billable Units",
-   "read_only": 1
+   "description": "Editable during reconciliation. Total Amount recalculates automatically."
   },
   {
    "fieldname": "price_per_unit",
    "fieldtype": "Currency",
    "label": "Price Per Unit",
-   "read_only": 1
+   "description": "Editable during reconciliation. Total Amount recalculates automatically."
   },
   {
    "fieldname": "total_amount",
    "fieldtype": "Currency",
    "label": "Total Amount",
-   "read_only": 1
+   "read_only": 1,
+   "description": "Always Total Billable Units × Price Per Unit."
   },
   {
    "fieldname": "section_break_meta",

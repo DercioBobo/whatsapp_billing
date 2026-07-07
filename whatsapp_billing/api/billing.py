@@ -427,6 +427,12 @@ def apply_usage_to_invoice(invoice_name, billing_month):
         _new_row_ref = new_row
 
     # ── Update invoice custom fields ────────────────────────────────────────
+    # wb_billing_month must always reflect the month that was actually just
+    # fetched, otherwise it drifts from the invoice's real content whenever a
+    # different month is fetched onto the same invoice (see WhatsApp Usage
+    # Reconciliation report for detecting invoices where this happened before
+    # this fix was in place).
+    invoice.wb_billing_month = billing_month
     invoice.wb_total_units = total_units
     invoice.wb_last_fetched = frappe.utils.now_datetime()
 
