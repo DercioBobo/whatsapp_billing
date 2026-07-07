@@ -294,6 +294,10 @@ def _get_summary(data):
     total_expected = sum(r.get("expected_amount") or 0 for r in data)
     customers = len({r.get("customer") for r in data if r.get("customer")})
     not_invoiced = sum(1 for r in data if not r.get("sales_invoice"))
+    # Total Expected Amount covers every month regardless of billing status —
+    # it never shrinks. This is the figure that actually reflects reconciliation:
+    # only months still lacking a linked invoice count towards it.
+    outstanding_amount = sum(r.get("expected_amount") or 0 for r in data if not r.get("sales_invoice"))
 
     return [
         {
@@ -325,5 +329,11 @@ def _get_summary(data):
             "value": not_invoiced,
             "datatype": "Int",
             "indicator": "orange" if not_invoiced else "green",
+        },
+        {
+            "label": _("Outstanding Amount"),
+            "value": outstanding_amount,
+            "datatype": "Currency",
+            "indicator": "orange" if outstanding_amount else "green",
         },
     ]
