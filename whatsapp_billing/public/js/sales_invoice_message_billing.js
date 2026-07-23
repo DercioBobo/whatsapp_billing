@@ -207,19 +207,35 @@ function wmb_show_breakdown_dialog(data) {
 		total_fmt = currency + ' ' + frappe.utils.formatNumber(data.total_amount, null, 2);
 	}
 
-	var table_html = '<div style="max-height:55vh;overflow-y:auto;margin-top:4px;">'
+	// ── Warn about phone numbers/groups with no configured member count ──────
+	// They were billed as 1 recipient — surface this so the user notices and
+	// can add the real count on the Config, then re-fetch to correct it.
+	var unknown_html = '';
+	var unknown = data.unknown_phone_numbers || [];
+	if (unknown.length) {
+		unknown_html = '<div style="background:var(--alert-orange-bg,#fff3e0);border:1px solid var(--yellow-400,#e0a53f);'
+			+ 'border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12.5px;">'
+			+ '<b>' + __('{0} number(s) billed as 1 recipient — no Member Count set:', [unknown.length]) + '</b>'
+			+ '<div style="margin-top:4px;word-break:break-all;">' + unknown.map(frappe.utils.escape_html).join(', ') + '</div>'
+			+ '<div style="margin-top:4px;color:var(--text-muted);">'
+			+ __('Add them to Group Member Counts on the Message Billing Config, then fetch again to correct this invoice.')
+			+ '</div>'
+			+ '</div>';
+	}
+
+	var table_html = unknown_html + '<div style="max-height:55vh;overflow-y:auto;margin-top:4px;">'
 		+ '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
 		+ '<thead><tr style="background:var(--subtle-fg);">'
 		+ '<th style="padding:8px 14px;text-align:left;border-bottom:2px solid var(--border-color);">'
 		+ __('Date') + '</th>'
 		+ '<th style="padding:8px 14px;text-align:right;border-bottom:2px solid var(--border-color);">'
-		+ __('Messages Sent') + '</th>'
+		+ __('Billed Messages') + '</th>'
 		+ '</tr></thead>'
 		+ '<tbody>' + rows + '</tbody>'
 		+ '<tfoot>'
 		+ '<tr style="font-weight:600;">'
 		+ '<td style="padding:8px 14px;border-top:2px solid var(--border-color);">'
-		+ __('Total Messages') + '</td>'
+		+ __('Total Billed Messages') + '</td>'
 		+ '<td style="padding:8px 14px;text-align:right;border-top:2px solid var(--border-color);">'
 		+ frappe.utils.formatNumber(data.total_messages, null, 0)
 		+ '</td>'

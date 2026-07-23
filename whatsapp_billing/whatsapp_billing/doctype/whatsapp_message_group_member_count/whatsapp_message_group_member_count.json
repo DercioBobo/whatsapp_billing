@@ -1,0 +1,50 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "phone_number",
+  "label",
+  "member_count"
+ ],
+ "fields": [
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Phone Number / Group JID",
+   "reqd": 1,
+   "description": "Must match the phone_number value returned by the API exactly (e.g. 120363408393794845@g.us)."
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Label",
+   "description": "Optional — for readability (e.g. the group name)."
+  },
+  {
+   "fieldname": "member_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Member Count",
+   "reqd": 1,
+   "default": "1",
+   "description": "Messages to this number are multiplied by this count when billing. Leave at 1 for individual contacts."
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Whatsapp Billing",
+ "name": "WhatsApp Message Group Member Count",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

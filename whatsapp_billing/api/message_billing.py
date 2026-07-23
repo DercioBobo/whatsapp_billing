@@ -10,8 +10,12 @@ Billing logic
   - Each customer's API endpoint reports daily message counts across all of
     their phone numbers/groups (fields: day, name, phone_number,
     total_mensagens_in_day).
-  - Billable quantity = SUM(total_mensagens_in_day) across every record in
-    the billing month, regardless of which phone_number/group sent it.
+  - Billable quantity ("total_messages") = SUM over every record in the
+    billing month of (total_mensagens_in_day × member_count), where
+    member_count comes from the config's manually maintained Group Member
+    Count table (WhatsApp Message Group Member Count) and defaults to 1 for
+    any phone_number not listed there — this is how billing "per message ×
+    group members" is achieved without the API exposing group membership.
   - total_amount = total_messages × price_per_message
 """
 
@@ -87,6 +91,20 @@ def _render_description(
             return "{" + key + "}"
 
     return template.format_map(_SafeDict(context))
+
+
+def _build_member_count_lookup(config) -> dict:
+    """Return {phone_number: member_count} from the config's manually
+    maintained Group Member Counts table.
+
+    Any phone_number not listed here — including every individual contact —
+    is treated as reaching 1 recipient per message when this lookup is used.
+    """
+    return {
+        row.phone_number: row.member_count or 1
+        for row in (config.get("member_counts") or [])
+        if row.phone_number
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -211,7 +229,12 @@ def get_message_usage(invoice_name, billing_month):
     Returns
     -------
     dict
-        ``{total_messages, breakdown, price_per_message, currency, item_code}``
+        ``{total_messages, breakdown, price_per_message, currency, item_code,
+           unknown_phone_numbers}``. ``total_messages`` is reach-adjusted —
+           each record's ``total_mensagens_in_day`` is multiplied by that
+           phone_number/group's configured member count (default 1).
+           ``unknown_phone_numbers`` lists any phone_number seen this month
+           that has no Group Member Count row on the config (billed as 1).
     """
     invoice = frappe.get_doc("Sales Invoice", invoice_name)
 
@@ -296,11 +319,14 @@ def get_message_usage(invoice_name, billing_month):
             title="API Format Error",
         )
 
-    # ── Filter to billing_month and sum messages per day ────────────────────
+    # ── Filter to billing_month and sum reach (messages × members) per day ──
     # No customer_id filtering — the endpoint is already scoped to this one
     # customer, and every phone_number/group they send from counts towards
-    # their bill.
+    # their bill. Each record's message count is multiplied by that
+    # phone_number's configured member count (1 if not listed).
+    member_counts = _build_member_count_lookup(config)
     daily_messages: dict = defaultdict(int)
+    unknown_phone_numbers: set = set()
 
     for record in raw_data:
         if not isinstance(record, dict):
@@ -319,8 +345,13 @@ def get_message_usage(invoice_name, billing_month):
         if record_date.year != target_year or record_date.month != target_month:
             continue
 
+        phone_number = record.get("phone_number")
+        member_count = member_counts.get(phone_number, 1)
+        if phone_number not in member_counts:
+            unknown_phone_numbers.add(phone_number)
+
         date_key = record_date.strftime("%Y-%m-%d")
-        daily_messages[date_key] += int(record.get("total_mensagens_in_day") or 0)
+        daily_messages[date_key] += int(record.get("total_mensagens_in_day") or 0) * member_count
 
     total_messages = sum(daily_messages.values())
 
@@ -336,6 +367,7 @@ def get_message_usage(invoice_name, billing_month):
         "price_per_message": config.price_per_message,
         "currency": config.currency,
         "item_code": config.billing_item,
+        "unknown_phone_numbers": sorted(n for n in unknown_phone_numbers if n),
     }
 
 
@@ -361,7 +393,7 @@ def apply_message_usage_to_invoice(invoice_name, billing_month):
     -------
     dict
         ``{success, total_messages, total_amount, price_per_message, currency,
-           breakdown, item_row_name, usage_log}``
+           breakdown, item_row_name, usage_log, unknown_phone_numbers}``
     """
     # ── Get usage data ───────────────────────────────────────────────────────
     usage = get_message_usage(invoice_name, billing_month)
@@ -371,6 +403,7 @@ def apply_message_usage_to_invoice(invoice_name, billing_month):
     item_code = usage["item_code"]
     breakdown = usage["breakdown"]
     currency = usage.get("currency")
+    unknown_phone_numbers = usage.get("unknown_phone_numbers") or []
     total_amount = total_messages * price_per_message
 
     # ── Load invoice and config ──────────────────────────────────────────────
@@ -494,6 +527,7 @@ def apply_message_usage_to_invoice(invoice_name, billing_month):
         "breakdown": breakdown,
         "item_row_name": item_row_name,
         "usage_log": log_name,
+        "unknown_phone_numbers": unknown_phone_numbers,
     }
 
 

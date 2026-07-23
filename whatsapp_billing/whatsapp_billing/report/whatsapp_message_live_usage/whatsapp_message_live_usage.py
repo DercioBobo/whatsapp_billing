@@ -128,8 +128,12 @@ def _get_data(filters):
             warnings.append(f"<b>{config.customer}</b>: {exc}")
             continue
 
-        # Aggregate: { billing_month: total_messages }
-        month_agg = _aggregate(raw_data, billing_month_filter)
+        member_counts = _get_member_counts(config.name)
+
+        # Aggregate: { billing_month: total_messages } — reach-adjusted the
+        # same way apply_message_usage_to_invoice computes it, so "Expected
+        # Amount" here always matches what actually lands on the invoice.
+        month_agg = _aggregate(raw_data, billing_month_filter, member_counts)
 
         price_per_message = config.price_per_message or 0
         currency = config.currency or frappe.defaults.get_global_default("currency")
@@ -193,12 +197,28 @@ def _fetch_api(config):
     raise Exception("Unexpected API response format")
 
 
-def _aggregate(raw_data, billing_month_filter):
+def _get_member_counts(config_name):
+    """Return {phone_number: member_count} from the config's Group Member
+    Counts child table. Any phone_number not present defaults to 1 wherever
+    this lookup is used — same rule as apply_message_usage_to_invoice.
     """
-    Group records by YYYY-MM and sum total_mensagens_in_day across every
-    phone_number/group — the endpoint is already scoped to one customer, so
-    every record counts towards that customer's bill.
+    rows = frappe.get_all(
+        "WhatsApp Message Group Member Count",
+        filters={"parent": config_name, "parenttype": "WhatsApp Message Billing Config"},
+        fields=["phone_number", "member_count"],
+    )
+    return {row.phone_number: row.member_count or 1 for row in rows if row.phone_number}
+
+
+def _aggregate(raw_data, billing_month_filter, member_counts=None):
     """
+    Group records by YYYY-MM and sum (total_mensagens_in_day × member_count)
+    across every phone_number/group — the endpoint is already scoped to one
+    customer, so every record counts towards that customer's bill. A
+    phone_number with no entry in member_counts is treated as reaching 1
+    recipient per message.
+    """
+    member_counts = member_counts or {}
     agg = defaultdict(int)
 
     for record in raw_data:
@@ -220,7 +240,8 @@ def _aggregate(raw_data, billing_month_filter):
         if billing_month_filter and month_key != billing_month_filter:
             continue
 
-        agg[month_key] += int(record.get("total_mensagens_in_day") or 0)
+        member_count = member_counts.get(record.get("phone_number"), 1)
+        agg[month_key] += int(record.get("total_mensagens_in_day") or 0) * member_count
 
     return agg
 
