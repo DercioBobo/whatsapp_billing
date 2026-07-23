@@ -194,7 +194,7 @@ function wb_show_breakdown_dialog(data) {
 			+ '<td style="padding:6px 14px;border-bottom:1px solid var(--border-color);">'
 			+ row.date + '</td>'
 			+ '<td style="padding:6px 14px;text-align:right;border-bottom:1px solid var(--border-color);">'
-			+ frappe.utils.formatNumber(row.unique_customers, null, 0)
+			+ format_number(row.unique_customers, null, 0)
 			+ '</td>'
 			+ '</tr>';
 	}).join('');
@@ -204,7 +204,7 @@ function wb_show_breakdown_dialog(data) {
 	try {
 		total_fmt = format_currency(data.total_amount, currency);
 	} catch (e) {
-		total_fmt = currency + ' ' + frappe.utils.formatNumber(data.total_amount, null, 2);
+		total_fmt = currency + ' ' + format_number(data.total_amount, null, 2);
 	}
 
 	var table_html = '<div style="max-height:55vh;overflow-y:auto;margin-top:4px;">'
@@ -221,7 +221,7 @@ function wb_show_breakdown_dialog(data) {
 		+ '<td style="padding:8px 14px;border-top:2px solid var(--border-color);">'
 		+ __('Total Billable Units') + '</td>'
 		+ '<td style="padding:8px 14px;text-align:right;border-top:2px solid var(--border-color);">'
-		+ frappe.utils.formatNumber(data.total_units, null, 0)
+		+ format_number(data.total_units, null, 0)
 		+ '</td>'
 		+ '</tr>'
 		+ '<tr style="font-weight:600;">'

@@ -59,7 +59,7 @@ function wmbc_show_picker_dialog(frm, numbers) {
 		var already = existing[n.phone_number] ? '  ✓ ' + __('already added') : '';
 		return {
 			label: label_part + n.phone_number + '  ·  ' + tag + '  ·  '
-				+ frappe.utils.formatNumber(n.total_messages, null, 0) + ' ' + __('msgs seen') + already,
+				+ format_number(n.total_messages, null, 0) + ' ' + __('msgs seen') + already,
 			value: n.phone_number,
 			checked: 0,
 		};
