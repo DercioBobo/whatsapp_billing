@@ -208,6 +208,87 @@ def test_connection(config_name):
     }
 
 
+@frappe.whitelist()
+def list_phone_numbers(config_name):
+    """Fetch the customer's API and return every distinct phone_number/group
+    JID seen, with its most recent label and total message count.
+
+    A convenience lookup for filling in Group Member Counts without having
+    to copy exact phone_number/JID strings out of raw API output by hand —
+    a typo there would silently bill that number as 1 recipient.
+
+    Returns
+    -------
+    list[dict]
+        Sorted by total_messages descending:
+        ``[{phone_number, label, total_messages, is_group}]``
+    """
+    config = frappe.get_doc("WhatsApp Message Billing Config", config_name)
+
+    if not config.api_endpoint:
+        frappe.throw(
+            "Set the API Endpoint before fetching phone numbers.",
+            title="Missing API Endpoint",
+        )
+
+    headers = {"Accept": "application/json"}
+    if config.get("api_token"):
+        headers["Authorization"] = f"Bearer {config.get_password('api_token')}"
+
+    try:
+        response = requests.get(config.api_endpoint, headers=headers, timeout=30)
+        response.raise_for_status()
+        raw_data = response.json()
+    except requests.exceptions.Timeout:
+        frappe.throw("API request timed out (30 s). Check the endpoint or try again.", title="API Timeout")
+    except requests.exceptions.ConnectionError as exc:
+        frappe.throw(f"Could not connect to API endpoint: {config.api_endpoint}\n{exc}", title="Connection Error")
+    except requests.exceptions.HTTPError as exc:
+        frappe.throw(f"API returned an error: {exc}", title="API HTTP Error")
+    except Exception as exc:
+        frappe.throw(f"Unexpected error while fetching API data: {exc}", title="API Error")
+
+    if isinstance(raw_data, dict):
+        for key in ("data", "results", "records", "items"):
+            if key in raw_data and isinstance(raw_data[key], list):
+                raw_data = raw_data[key]
+                break
+        else:
+            raw_data = [raw_data]
+
+    if not isinstance(raw_data, list):
+        frappe.throw("Unexpected API response format — expected a JSON array.", title="API Format Error")
+
+    totals: dict = defaultdict(int)
+    labels: dict = {}
+
+    for record in raw_data:
+        if not isinstance(record, dict):
+            continue
+
+        phone_number = record.get("phone_number")
+        if not phone_number:
+            continue
+
+        totals[phone_number] += int(record.get("total_mensagens_in_day") or 0)
+
+        name = str(record.get("name") or "").strip()
+        if name:
+            labels[phone_number] = name
+
+    results = [
+        {
+            "phone_number": phone_number,
+            "label": labels.get(phone_number, ""),
+            "total_messages": total,
+            "is_group": phone_number.endswith("@g.us"),
+        }
+        for phone_number, total in totals.items()
+    ]
+    results.sort(key=lambda r: r["total_messages"], reverse=True)
+    return results
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Core billing logic
 # ─────────────────────────────────────────────────────────────────────────────
