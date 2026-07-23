@@ -10,7 +10,10 @@ required_apps = []
 
 # ─── JS bundles ────────────────────────────────────────────────────────────────
 doctype_js = {
-    "Sales Invoice": "public/js/sales_invoice.js"
+    "Sales Invoice": [
+        "public/js/sales_invoice.js",
+        "public/js/sales_invoice_message_billing.js",
+    ]
 }
 
 # ─── Fixtures ──────────────────────────────────────────────────────────────────
@@ -36,7 +39,27 @@ fixtures = [
                 ],
             ],
         ],
-    }
+    },
+    {
+        "doctype": "Custom Field",
+        "filters": [
+            ["dt", "=", "Sales Invoice"],
+            [
+                "fieldname",
+                "in",
+                [
+                    "wmb_section_break",
+                    "wmb_enabled",
+                    "wmb_config",
+                    "wmb_billing_month",
+                    "wmb_col_break",
+                    "wmb_total_messages",
+                    "wmb_last_fetched",
+                    "wmb_usage_log",
+                ],
+            ],
+        ],
+    },
 ]
 
 # ─── Installation hook ─────────────────────────────────────────────────────────
@@ -46,10 +69,13 @@ after_install = "whatsapp_billing.setup.after_install"
 scheduler_events = {}
 
 # ─── Doc Events ───────────────────────────────────────────────────────────────
-# Only fires on Sales Invoices that have wb_enabled=1 AND were created by
-# Auto Repeat. All other invoices are completely untouched.
+# Only fires on Sales Invoices that have wb_enabled=1 / wmb_enabled=1 AND were
+# created by Auto Repeat. All other invoices are completely untouched.
 doc_events = {
     "Sales Invoice": {
-        "after_insert": "whatsapp_billing.billing_hooks.on_sales_invoice_after_insert"
+        "after_insert": [
+            "whatsapp_billing.billing_hooks.on_sales_invoice_after_insert",
+            "whatsapp_billing.message_billing_hooks.on_sales_invoice_after_insert_message_billing",
+        ]
     }
 }
