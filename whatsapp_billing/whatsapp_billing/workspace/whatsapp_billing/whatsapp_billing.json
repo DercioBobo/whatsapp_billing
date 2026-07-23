@@ -1,0 +1,194 @@
+{
+ "charts": [],
+ "content": "[{\"id\": \"wb-hdr\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>WhatsApp Billing</b></span>\", \"col\": 12}}, {\"id\": \"wb-desc\", \"type\": \"paragraph\", \"data\": {\"text\": \"Two billing engines on one Sales Invoice \\u2014 a flat daily-active fee and a message-volume fee. Configs, usage logs, and reports for both live below.\", \"col\": 12}}, {\"id\": \"wb-hdr-sc\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Your Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"wb-sc-1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Billing Config\", \"col\": 3}}, {\"id\": \"wb-sc-2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Usage Log\", \"col\": 3}}, {\"id\": \"wb-sc-3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Message Billing Config\", \"col\": 3}}, {\"id\": \"wb-sc-4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"WhatsApp Message Usage Log\", \"col\": 3}}, {\"id\": \"wb-spc\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"wb-hdr-cards\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Reports &amp; Masters</b></span>\", \"col\": 12}}, {\"id\": \"wb-card-1\", \"type\": \"card\", \"data\": {\"card_name\": \"Session Billing\", \"col\": 6}}, {\"id\": \"wb-card-2\", \"type\": \"card\", \"data\": {\"card_name\": \"Message Billing\", \"col\": 6}}]",
+ "creation": "2024-01-01 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "megaphone",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Whatsapp Billing",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Session Billing",
+   "link_count": 5,
+   "icon": "octicon octicon-broadcast",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "WhatsApp Billing Config",
+   "link_count": 0,
+   "link_to": "WhatsApp Billing Config",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "WhatsApp Usage Log",
+   "link_count": 0,
+   "link_to": "WhatsApp Usage Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "WhatsApp Live Usage",
+   "link_count": 0,
+   "link_to": "WhatsApp Live Usage",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "WhatsApp Monthly Usage",
+   "link_count": 0,
+   "link_to": "WhatsApp Monthly Usage",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "WhatsApp Usage Reconciliation",
+   "link_count": 0,
+   "link_to": "WhatsApp Usage Reconciliation",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Message Billing",
+   "link_count": 5,
+   "icon": "octicon octicon-comment-discussion",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "WhatsApp Message Billing Config",
+   "link_count": 0,
+   "link_to": "WhatsApp Message Billing Config",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "WhatsApp Message Usage Log",
+   "link_count": 0,
+   "link_to": "WhatsApp Message Usage Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "WhatsApp Message Live Usage",
+   "link_count": 0,
+   "link_to": "WhatsApp Message Live Usage",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "WhatsApp Message Monthly Usage",
+   "link_count": 0,
+   "link_to": "WhatsApp Message Monthly Usage",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "WhatsApp Message Usage Reconciliation",
+   "link_count": 0,
+   "link_to": "WhatsApp Message Usage Reconciliation",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Whatsapp Billing",
+ "name": "Whatsapp Billing",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "",
+   "label": "WhatsApp Billing Config",
+   "link_to": "WhatsApp Billing Config",
+   "restrict_to_domain": "",
+   "stats_filter": "{}",
+   "type": "DocType",
+   "url": ""
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "",
+   "label": "WhatsApp Usage Log",
+   "link_to": "WhatsApp Usage Log",
+   "restrict_to_domain": "",
+   "stats_filter": "{}",
+   "type": "DocType",
+   "url": ""
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": "",
+   "label": "WhatsApp Message Billing Config",
+   "link_to": "WhatsApp Message Billing Config",
+   "restrict_to_domain": "",
+   "stats_filter": "{}",
+   "type": "DocType",
+   "url": ""
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": "",
+   "label": "WhatsApp Message Usage Log",
+   "link_to": "WhatsApp Message Usage Log",
+   "restrict_to_domain": "",
+   "stats_filter": "{}",
+   "type": "DocType",
+   "url": ""
+  }
+ ],
+ "title": "Whatsapp Billing"
+}
